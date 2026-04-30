@@ -1,63 +1,85 @@
 """
-Nerfstudio Template Config
-
-Define your custom method here that registers with Nerfstudio CLI.
+Deformable Gaussian Splatting Config
 """
 
 from __future__ import annotations
 
-from method_template.template_datamanager import (
-    TemplateDataManagerConfig,
-)
-from method_template.template_model import TemplateModelConfig
-from method_template.template_pipeline import (
-    TemplatePipelineConfig,
-)
 from nerfstudio.configs.base_config import ViewerConfig
-from nerfstudio.data.dataparsers.nerfstudio_dataparser import NerfstudioDataParserConfig
-from nerfstudio.engine.optimizers import AdamOptimizerConfig, RAdamOptimizerConfig
-from nerfstudio.engine.schedulers import (
-    ExponentialDecaySchedulerConfig,
-)
+from nerfstudio.engine.optimizers import AdamOptimizerConfig
+from nerfstudio.engine.schedulers import ExponentialDecaySchedulerConfig
 from nerfstudio.engine.trainer import TrainerConfig
 from nerfstudio.plugins.types import MethodSpecification
 
+# Splatfacto specific imports
+from nerfstudio.data.datamanagers.full_images_datamanager import FullImageDatamanagerConfig
+from nerfstudio.data.dataparsers.dnerf_dataparser import DNeRFDataParserConfig
+from nerfstudio.pipelines.base_pipeline import VanillaPipelineConfig
+
+# Import your custom model configuration
+from method_template.deformable_model import DeformableSplatfactoModelConfig
 
 method_template = MethodSpecification(
     config=TrainerConfig(
-        method_name="method-template",  # TODO: rename to your own model
-        steps_per_eval_batch=500,
-        steps_per_save=2000,
+        method_name="deformable-splat",
+        
+        # 1. DISABLE MID-TRAINING EVALUATIONS
+        # This prevents the massive VRAM spikes that cause crashes
+        steps_per_eval_image=0,
+        steps_per_eval_batch=0,
+        steps_per_eval_all_images=0,
+        
+        # 2. REDUCE CHECKPOINT FREQUENCY
+        # Only save exactly halfway and at the end
+        steps_per_save=15000, 
         max_num_iterations=30000,
-        mixed_precision=True,
-        pipeline=TemplatePipelineConfig(
-            datamanager=TemplateDataManagerConfig(
-                dataparser=NerfstudioDataParserConfig(),
-                train_num_rays_per_batch=4096,
-                eval_num_rays_per_batch=4096,
+        mixed_precision=False,
+        pipeline=VanillaPipelineConfig(
+            datamanager=FullImageDatamanagerConfig(
+                dataparser=DNeRFDataParserConfig(scale_factor=0.5), 
+                cache_images="cpu", 
             ),
-            model=TemplateModelConfig(
-                eval_num_rays_per_chunk=1 << 15,
-                average_init_density=0.01,
+            model=DeformableSplatfactoModelConfig(
+                # 3. GEOMETRY & MATH OPTIMIZATIONS
+                sh_degree=2,            # Less color math per point = much faster ETA
+                cull_alpha_thresh=0.01  # Delete ghost/transparent points more aggressively
             ),
         ),
+        
+        # ... [KEEP YOUR EXISTING OPTIMIZERS DICTIONARY HERE] ...
         optimizers={
-            # TODO: consider changing optimizers depending on your custom method
-            "proposal_networks": {
-                "optimizer": AdamOptimizerConfig(lr=1e-2, eps=1e-15),
-                "scheduler": ExponentialDecaySchedulerConfig(lr_final=0.0001, max_steps=200000),
+            "means": {
+                "optimizer": AdamOptimizerConfig(lr=1.6e-4, eps=1e-15),
+                "scheduler": ExponentialDecaySchedulerConfig(lr_final=1.6e-6, max_steps=30000),
             },
-            "fields": {
-                "optimizer": AdamOptimizerConfig(lr=1e-2, eps=1e-15),
-                "scheduler": ExponentialDecaySchedulerConfig(lr_final=1e-4, max_steps=50000),
+            "features_dc": {
+                "optimizer": AdamOptimizerConfig(lr=0.0025, eps=1e-15),
+                "scheduler": None,
             },
+            "features_rest": {
+                "optimizer": AdamOptimizerConfig(lr=0.0025 / 20, eps=1e-15),
+                "scheduler": None,
+            },
+            "opacities": {
+                "optimizer": AdamOptimizerConfig(lr=0.05, eps=1e-15),
+                "scheduler": None,
+            },
+            "scales": {
+                "optimizer": AdamOptimizerConfig(lr=0.005, eps=1e-15),
+                "scheduler": None,
+            },
+            "quats": {"optimizer": AdamOptimizerConfig(lr=0.001, eps=1e-15), "scheduler": None},
             "camera_opt": {
                 "optimizer": AdamOptimizerConfig(lr=1e-3, eps=1e-15),
-                "scheduler": ExponentialDecaySchedulerConfig(lr_final=1e-4, max_steps=5000),
+                "scheduler": ExponentialDecaySchedulerConfig(lr_final=5e-5, max_steps=30000),
             },
+            # YOUR CUSTOM MLP OPTIMIZER
+            "deformation_field": {
+                "optimizer": AdamOptimizerConfig(lr=1e-4, eps=1e-15),
+                "scheduler": ExponentialDecaySchedulerConfig(lr_final=1e-5, max_steps=30000),
+            }
         },
         viewer=ViewerConfig(num_rays_per_chunk=1 << 15),
         vis="viewer",
     ),
-    description="Nerfstudio method template.",
+    description="Deformable 3D Gaussian Splatting architecture for dynamic scenes.",
 )
