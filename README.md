@@ -49,4 +49,4 @@ tensorboard--logdir outputs/
 On running this command, the renderer automatically selects a set of few random camera locations and creates a bezier joining these points and renders the video along the camera view path.
 ```
 ns-render interpolate --load-config outputs/rtcw_sequence/deformable_gaussian/.../config.yml --output-path renders/dynamic_interpolation.mp4
-'''
+```
