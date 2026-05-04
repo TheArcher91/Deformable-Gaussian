@@ -50,3 +50,8 @@ On running this command, the renderer automatically selects a set of few random 
 ```
 ns-render interpolate --load-config outputs/rtcw_sequence/deformable_gaussian/.../config.yml --output-path renders/dynamic_interpolation.mp4
 ```
+# Report Link :
+
+The following link is for the Bachelor Thesis Project Report.
+
+- 📖 [Google drive]([https://drive.google.com/drive/folders/1eTfcvEhTG1rrAkEWmcNGgAQLKOJeqbTo?usp=sharing](https://drive.google.com/file/d/1xvQkuduBAmU2uQEB9IzWRVv6ygrew2yo/view?usp=sharing))
