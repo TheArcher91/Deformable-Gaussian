@@ -54,4 +54,4 @@ ns-render interpolate --load-config outputs/rtcw_sequence/deformable_gaussian/..
 
 The following link is for the Bachelor Thesis Project Report.
 
-- 📖 [Google drive]([https://drive.google.com/drive/folders/1eTfcvEhTG1rrAkEWmcNGgAQLKOJeqbTo?usp=sharing](https://drive.google.com/file/d/1xvQkuduBAmU2uQEB9IzWRVv6ygrew2yo/view?usp=sharing))
+- 📖 [Google drive](https://drive.google.com/file/d/1xvQkuduBAmU2uQEB9IzWRVv6ygrew2yo/view?usp=sharing)
